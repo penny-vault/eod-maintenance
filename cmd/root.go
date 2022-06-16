@@ -83,7 +83,7 @@ func initConfig() {
 		viper.AddConfigPath(fmt.Sprintf("%s/.config", home))
 		viper.AddConfigPath(".")
 		viper.SetConfigType("toml")
-		viper.SetConfigName("eod-maintenance")
+		viper.SetConfigName("eod-maintenance.toml")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
