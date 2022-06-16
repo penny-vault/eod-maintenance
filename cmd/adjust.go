@@ -22,19 +22,16 @@ import (
 var all bool
 
 // adjustedCmd represents the adjusted command
-var adjustedCmd = &cobra.Command{
-	Use:   "adjusted",
+var adjustCmd = &cobra.Command{
+	Use:   "adjust",
 	Short: "Calculate adjusted eod prices",
 	Run: func(cmd *cobra.Command, args []string) {
-		if all {
-			eod.AdjustAllTickers()
-		}
-
+		eod.AdjustTickers(all)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(adjustedCmd)
+	rootCmd.AddCommand(adjustCmd)
 
-	adjustedCmd.Flags().BoolVarP(&all, "all", "a", false, "calculated adjusted price for all eod tickers")
+	adjustCmd.Flags().BoolVarP(&all, "all", "a", false, "calculated adjusted price for all eod tickers")
 }
