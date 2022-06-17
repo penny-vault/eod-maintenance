@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func AdjustAllTickers() error {
+func AdjustTickers(all bool) error {
 	log.Info().Msg("adjust all tickers close price")
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, viper.GetString("database.url"))
@@ -48,11 +48,22 @@ func AdjustAllTickers() error {
 
 	var currTicker string = ""
 	var adjustFactor float64 = 1.0
-	rows, err := conn.Query(ctx, "SELECT event_date, ticker, close, dividend, split_factor FROM eod ORDER BY ticker, event_date DESC")
-	if err != nil {
-		log.Error().Err(err).Msg("SELECT query error")
-		return err
+
+	var rows pgx.Rows
+	if all {
+		rows, err = conn.Query(ctx, "SELECT event_date, ticker, close, dividend, split_factor FROM eod ORDER BY ticker, event_date DESC")
+		if err != nil {
+			log.Error().Err(err).Msg("SELECT all query error")
+			return err
+		}
+	} else {
+		rows, err = conn.Query(ctx, "SELECT event_date, ticker, close, dividend, split_factor FROM eod WHERE (dividend > 0 OR split_factor != 1) AND event_date >= (now() - INTERVAL '2 days') ORDER BY ticker, event_date DESC")
+		if err != nil {
+			log.Error().Err(err).Msg("SELECT recent query error")
+			return err
+		}
 	}
+
 	for rows.Next() {
 		var myEod Eod
 		err = rows.Scan(&myEod.EventDate, &myEod.Ticker, &myEod.Close, &myEod.Dividend, &myEod.SplitFactor)
