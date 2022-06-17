@@ -24,3 +24,19 @@ type Eod struct {
 	Dividend    float64
 	SplitFactor float64
 }
+
+type SyntheticAsset struct {
+	Symbol    string
+	Name      string
+	Category  string
+	StartDate time.Time
+	FIGI      string
+	Source    []SyntheticSource
+}
+
+type SyntheticSource struct {
+	Symbol  string
+	From    time.Time
+	To      time.Time
+	Sources []string
+}
