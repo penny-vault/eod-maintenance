@@ -15,23 +15,89 @@
 package cmd
 
 import (
+	"context"
+	"os"
+
+	"github.com/jackc/pgx/v4"
 	"github.com/penny-vault/eod-maintenance/eod"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var all bool
+var recent bool
 
 // adjustedCmd represents the adjusted command
 var adjustCmd = &cobra.Command{
 	Use:   "adjust",
 	Short: "Calculate adjusted eod prices",
 	Run: func(cmd *cobra.Command, args []string) {
-		eod.AdjustTickers(all)
+		ctx := context.Background()
+		conn, err := pgx.Connect(ctx, viper.GetString("database.url"))
+		if err != nil {
+			log.Error().Err(err).Msg("could not connect to database")
+			os.Exit(1)
+		}
+		defer conn.Close(ctx)
+
+		assets := make([]string, 0)
+		if recent {
+			rows, err := conn.Query(ctx, `SELECT DISTINCT composite_figi FROM eod WHERE event_date >= now() - interval '7 days' AND (split_factor != 1.0 OR dividend >= 0.0)`)
+			if err != nil {
+				log.Error().Err(err).Msg("could not query database for unique assets")
+			}
+			for rows.Next() {
+				var figi string
+				if err := rows.Scan(&figi); err != nil {
+					log.Error().Err(err).Msg("could not scan composite_figi into variable")
+					os.Exit(1)
+				}
+				assets = append(assets, figi)
+			}
+		}
+
+		if !recent && len(args) == 0 {
+			rows, err := conn.Query(ctx, `SELECT DISTINCT composite_figi FROM assets`)
+			if err != nil {
+				log.Error().Err(err).Msg("could not query database for unique assets")
+			}
+			for rows.Next() {
+				var figi string
+				if err := rows.Scan(&figi); err != nil {
+					log.Error().Err(err).Msg("could not scan composite_figi into variable")
+					os.Exit(1)
+				}
+				assets = append(assets, figi)
+			}
+		}
+
+		// convert input arguments to figi's
+		for _, inp := range args {
+			var figi string
+			if err := conn.QueryRow(ctx, `SELECT composite_figi FROM assets WHERE ticker = $1 OR composite_figi = $1 LIMIT 1`, inp).Scan(&figi); err != nil {
+				log.Error().Err(err).Str("InputArg", inp).Msg("could not convert input argument to composite figi")
+				continue
+			}
+			assets = append(assets, figi)
+		}
+
+		for _, asset := range assets {
+			log.Info().Str("CompositeFigi", asset).Msg("adjusting close price for composite figi")
+			prices, err := eod.AdjustAssetEodPrice(ctx, conn, asset)
+			if err != nil {
+				log.Error().Err(err).Str("CompositeFigi", asset).Msg("could not adjust asset prices")
+				continue
+			}
+			if err := eod.SaveAdjCloseToDb(ctx, conn, prices); err != nil {
+				log.Error().Err(err).Str("CompositeFigi", asset).Msg("could not save adjusted close to db")
+				continue
+			}
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(adjustCmd)
 
-	adjustCmd.Flags().BoolVarP(&all, "all", "a", false, "calculated adjusted price for all eod tickers")
+	adjustCmd.Flags().BoolVarP(&recent, "recent", "r", false, "calculated adjusted price for recently changed eod tickers")
 }

@@ -16,65 +16,27 @@ package eod
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
-func AdjustTickers(all bool) error {
-	log.Info().Msg("adjust all tickers close price")
-	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, viper.GetString("database.url"))
+func AdjustAssetEodPrice(ctx context.Context, conn *pgx.Conn, compositeFigi string) ([]*Eod, error) {
+	adjustHistory := make([]*Eod, 0)
+	adjustFactor := 1.0
+
+	rows, err := conn.Query(ctx, "SELECT event_date, ticker, composite_figi, close, dividend, split_factor FROM eod WHERE composite_figi = $1 ORDER BY ticker, event_date DESC", compositeFigi)
 	if err != nil {
-		log.Error().Err(err).Msg("could not connect to database")
-		return err
-	}
-	defer conn.Close(ctx)
-
-	conn2, err := pgx.Connect(ctx, viper.GetString("database.url"))
-	if err != nil {
-		log.Error().Err(err).Msg("could not create 2nd connection to database")
-		return err
-	}
-	defer conn2.Close(ctx)
-
-	tx, err := conn2.Begin(ctx)
-	if err != nil {
-		log.Error().Err(err).Msg("could not start transaction")
-		return err
-	}
-
-	var currTicker string = ""
-	var adjustFactor float64 = 1.0
-
-	var rows pgx.Rows
-	if all {
-		rows, err = conn.Query(ctx, "SELECT event_date, ticker, close, dividend, split_factor FROM eod ORDER BY ticker, event_date DESC")
-		if err != nil {
-			log.Error().Err(err).Msg("SELECT all query error")
-			return err
-		}
-	} else {
-		rows, err = conn.Query(ctx, "SELECT event_date, ticker, close, dividend, split_factor FROM eod WHERE (dividend > 0 OR split_factor != 1) AND event_date >= (now() - INTERVAL '2 days') ORDER BY ticker, event_date DESC")
-		if err != nil {
-			log.Error().Err(err).Msg("SELECT recent query error")
-			return err
-		}
+		log.Error().Err(err).Msg("SELECT all query error")
+		return adjustHistory, err
 	}
 
 	for rows.Next() {
 		var myEod Eod
-		err = rows.Scan(&myEod.EventDate, &myEod.Ticker, &myEod.Close, &myEod.Dividend, &myEod.SplitFactor)
+		err = rows.Scan(&myEod.EventDate, &myEod.Ticker, &myEod.CompositeFigi, &myEod.Close, &myEod.Dividend, &myEod.SplitFactor)
 		if err != nil {
-			log.Error().Err(err).Msg("could not scan result in to ticker")
-		}
-
-		if currTicker != myEod.Ticker {
-			// new ticker, reset
-			currTicker = myEod.Ticker
-			adjustFactor = 1.0
+			log.Error().Err(err).Msg("could not scan result into eod")
+			return adjustHistory, err
 		}
 
 		myEod.AdjClose = myEod.Close / adjustFactor
@@ -86,13 +48,31 @@ func AdjustTickers(all bool) error {
 			adjustFactor = 1
 		}
 
-		fmt.Printf("%s\t%s\t%.2f\t%.2f\n", myEod.EventDate.Format("2006-01-02"), myEod.Ticker, myEod.Close, myEod.AdjClose)
-		if _, err := tx.Exec(ctx, "UPDATE eod SET adj_close=$1 WHERE ticker=$2 AND event_date=$3", myEod.AdjClose, myEod.Ticker, myEod.EventDate); err != nil {
+		adjustHistory = append(adjustHistory, &myEod)
+	}
+
+	return adjustHistory, nil
+}
+
+// SaveAdjCloseToDb updates database record with adjusted close value
+func SaveAdjCloseToDb(ctx context.Context, conn *pgx.Conn, prices []*Eod) error {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("could not begin db transaction to adjust eod prices")
+	}
+
+	for _, myEod := range prices {
+		if _, err := tx.Exec(ctx, "UPDATE eod SET adj_close=$1 WHERE composite_figi=$2 AND event_date=$3", myEod.AdjClose, myEod.CompositeFigi, myEod.EventDate); err != nil {
 			log.Error().Err(err).Str("Ticker", myEod.Ticker).Float64("AdjustedClose", myEod.AdjClose).Float64("Close", myEod.Close).Time("EventDate", myEod.EventDate).Msg("failed to update eod")
 			tx.Rollback(ctx)
+			return err
 		}
 	}
 
-	tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		log.Error().Err(err).Msg("could not commit eod price update to database")
+		return err
+	}
+
 	return nil
 }
