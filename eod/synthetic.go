@@ -28,6 +28,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	ErrInvalidConfig = errors.New("one of CompositeFigi or FileName must be set on a component")
+)
+
 // UpdateSyntheticHistory updates the database with the synthetic asset
 func UpdateSyntheticHistory(ctx context.Context, conn *pgx.Conn, asset *SyntheticAsset, history []*Eod) error {
 	log.Info().Str("Ticker", asset.Symbol).Str("CompositeFigi", asset.CompositeFigi).Msg("update synthetic history eod prices")
@@ -39,10 +43,14 @@ func UpdateSyntheticHistory(ctx context.Context, conn *pgx.Conn, asset *Syntheti
 	}
 
 	// ensure that an asset exists in the database
-	saveSyntheticAsset(ctx, tx, asset)
+	if err := saveSyntheticAsset(ctx, tx, asset); err != nil {
+		return err
+	}
 
 	// save to database
-	saveSyntheticEod(ctx, tx, history)
+	if err := saveSyntheticEod(ctx, tx, history); err != nil {
+		return err
+	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
@@ -109,6 +117,11 @@ func BuildSyntheticHistory(ctx context.Context, asset *SyntheticAsset, history [
 func getComponentPctChange(ctx context.Context, component *SyntheticComponent) ([]*PercentChange, error) {
 	pctChange := []*PercentChange{}
 
+	if component.FileName == "" && component.CompositeFigi == "" {
+		log.Error().Err(ErrInvalidConfig).Msg("asset component is mis-specified")
+		return pctChange, ErrInvalidConfig
+	}
+
 	if component.FileName != "" {
 		// load from file
 		fh, err := os.OpenFile(component.FileName, os.O_RDONLY, os.ModePerm)
@@ -137,7 +150,9 @@ func getComponentPctChange(ctx context.Context, component *SyntheticComponent) (
 			})
 			last = quote.AdjClose
 		}
-	} else if component.CompositeFigi != "" {
+	}
+
+	if component.FileName == "" && component.CompositeFigi != "" {
 		// load from database
 		conn, err := pgx.Connect(ctx, viper.GetString("database.url"))
 		if err != nil {
@@ -148,7 +163,7 @@ func getComponentPctChange(ctx context.Context, component *SyntheticComponent) (
 
 		rows, err := conn.Query(ctx, `SELECT event_date, (adj_close / (LAG (adj_close,1) OVER (ORDER BY event_date ASC)))::double precision AS pct_change FROM eod WHERE composite_figi = $1 ORDER BY event_date ASC`, component.CompositeFigi)
 		if err != nil {
-			log.Error().Err(err).Msg("could not retreive price history from db")
+			log.Error().Err(err).Msg("could not retrieve price history from db")
 			return pctChange, err
 		}
 		for rows.Next() {
@@ -164,10 +179,6 @@ func getComponentPctChange(ctx context.Context, component *SyntheticComponent) (
 				pctChange = append(pctChange, pct)
 			}
 		}
-	} else {
-		err := errors.New("one of CompositeFigi or FileName must be set on a component")
-		log.Error().Err(err).Msg("asset component is mis-specified")
-		return pctChange, err
 	}
 
 	return pctChange, nil
@@ -206,7 +217,9 @@ func saveSyntheticAsset(ctx context.Context, tx pgx.Tx, asset *SyntheticAsset) e
 	sql := `INSERT INTO assets ("ticker", "composite_figi", "active", "name", "asset_type", "listed_utc") VALUES ($1, $2, 't', $3, 'Synthetic History', $4) ON CONFLICT ON CONSTRAINT assets_pkey DO UPDATE SET name = EXCLUDED.name, listed_utc = EXCLUDED.listed_utc`
 	if _, err := tx.Exec(ctx, sql, asset.Symbol, asset.CompositeFigi, asset.Name, asset.StartDate); err != nil {
 		log.Error().Err(err).Str("Ticker", asset.Symbol).Str("CompositeFigi", asset.CompositeFigi).Msg("could not update asset record in database")
-		tx.Rollback(ctx)
+		if err2 := tx.Rollback(ctx); err != nil {
+			log.Error().Err(err2).Msg("failed to rollback transaction")
+		}
 		return err
 	}
 	return nil
@@ -217,7 +230,9 @@ func saveSyntheticEod(ctx context.Context, tx pgx.Tx, quotes []*Eod) error {
 	for _, quote := range quotes {
 		if _, err := tx.Exec(ctx, `INSERT INTO eod ("event_date", "ticker", "composite_figi", "close", "adj_close") VALUES ($1, $2, $3, $4, $5) ON CONFLICT ON CONSTRAINT eod_pkey DO UPDATE SET close = EXCLUDED.close, adj_close = EXCLUDED.adj_close`, quote.EventDate, quote.Ticker, quote.CompositeFigi, quote.Close, quote.AdjClose); err != nil {
 			log.Error().Err(err).Msg("could not save eod quote to database")
-			tx.Rollback(ctx)
+			if err2 := tx.Rollback(ctx); err != nil {
+				log.Error().Err(err2).Msg("failed to rollback transaction")
+			}
 			return err
 		}
 	}
