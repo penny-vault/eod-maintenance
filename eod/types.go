@@ -17,26 +17,36 @@ package eod
 import "time"
 
 type Eod struct {
-	EventDate   time.Time
-	Ticker      string
-	Close       float64
-	AdjClose    float64
-	Dividend    float64
-	SplitFactor float64
+	EventDate     time.Time
+	EventDateStr  string `csv:"date"`
+	Ticker        string
+	CompositeFigi string
+	Close         float64
+	AdjClose      float64 `csv:"adjClose"`
+	Dividend      float64
+	SplitFactor   float64
 }
 
 type SyntheticAsset struct {
-	Symbol    string
-	Name      string
-	Category  string
-	StartDate time.Time
-	FIGI      string
-	Source    []SyntheticSource
+	Category      string
+	Components    []*SyntheticComponent
+	CompositeFigi string
+	Name          string
+	StartDate     time.Time
+	Symbol        string
 }
 
-type SyntheticSource struct {
-	Symbol  string
-	From    time.Time
-	To      time.Time
-	Sources []string
+type SyntheticComponent struct {
+	CompositeFigi string
+	FileName      string
+	Name          string
+	Start         time.Time
+	Source        []string
+	Symbol        string
+	End           time.Time
+}
+
+type PercentChange struct {
+	Date    time.Time
+	Percent float64
 }
