@@ -6,8 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Calculate adjusted closed for assets with recent splits or dividends
-- Calculate synthetic history
 
 ### Changed
 
@@ -19,4 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-[Unreleased]: https://github.com/penny-vault/eod-maintenance/commits/main
+## [0.1.0] - 2022-06-18
+### Added
+- Calculate adjusted closed for assets with recent splits or dividends
+- Calculate synthetic history
+
+[Unreleased]: https://github.com/penny-vault/eod-maintenance/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/penny-vault/eod-maintenance/releases/tag/v0.1.0
