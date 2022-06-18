@@ -247,7 +247,7 @@ func version() *semver.Version {
 		os.Exit(1)
 	}
 
-	regex, _ := regexp.Compile(`(?P<hash>[a-z0-9]+) HEAD.*?(?P<tag>tag: v(?P<version>\d{1,3}.\d{1,3}.\d{1,3}))?`)
+	regex, _ := regexp.Compile(`(?P<hash>[a-z0-9]+) (grafted, )?HEAD.*?(?P<tag>tag: v(?P<version>\d{1,3}.\d{1,3}.\d{1,3}))?`)
 
 	params := make(map[string]string)
 	res := regex.FindStringSubmatch(currentCommit)
