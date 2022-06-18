@@ -215,7 +215,7 @@ func saveSyntheticAsset(ctx context.Context, tx pgx.Tx, asset *SyntheticAsset) e
 // saveSyntheticEod saves EOD quotes to the database
 func saveSyntheticEod(ctx context.Context, tx pgx.Tx, quotes []*Eod) error {
 	for _, quote := range quotes {
-		if _, err := tx.Exec(ctx, `INSERT INTO eod ("event_date", "ticker", "composite_figi", "close") VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT eod_pkey DO UPDATE SET close = EXCLUDED.close`, quote.EventDate, quote.Ticker, quote.CompositeFigi, quote.Close); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO eod ("event_date", "ticker", "composite_figi", "close", "adj_close") VALUES ($1, $2, $3, $4, $5) ON CONFLICT ON CONSTRAINT eod_pkey DO UPDATE SET close = EXCLUDED.close, adj_close = EXCLUDED.adj_close`, quote.EventDate, quote.Ticker, quote.CompositeFigi, quote.Close, quote.AdjClose); err != nil {
 			log.Error().Err(err).Msg("could not save eod quote to database")
 			tx.Rollback(ctx)
 			return err
