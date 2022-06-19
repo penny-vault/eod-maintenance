@@ -27,9 +27,6 @@ type PgxIface interface {
 	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
 	QueryRow(context.Context, string, ...interface{}) pgx.Row
 	Query(context.Context, string, ...interface{}) (pgx.Rows, error)
-	Ping(context.Context) error
-	Prepare(context.Context, string, string) (*pgconn.StatementDescription, error)
-	Close(context.Context) error
 }
 
 func AdjustAssetEodPrice(ctx context.Context, conn PgxIface, compositeFigi string) ([]*Eod, error) {
@@ -66,7 +63,7 @@ func AdjustAssetEodPrice(ctx context.Context, conn PgxIface, compositeFigi strin
 }
 
 // SaveAdjCloseToDb updates database record with adjusted close value
-func SaveAdjCloseToDb(ctx context.Context, conn *pgx.Conn, prices []*Eod) error {
+func SaveAdjCloseToDb(ctx context.Context, conn PgxIface, prices []*Eod) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not begin db transaction to adjust eod prices")

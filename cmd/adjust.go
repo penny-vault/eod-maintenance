@@ -18,7 +18,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/penny-vault/eod-maintenance/eod"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -26,6 +26,7 @@ import (
 )
 
 var recent bool
+var clean bool
 
 // adjustedCmd represents the adjusted command
 var adjustCmd = &cobra.Command{
@@ -33,12 +34,17 @@ var adjustCmd = &cobra.Command{
 	Short: "Calculate adjusted eod prices",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
-		conn, err := pgx.Connect(ctx, viper.GetString("database.url"))
+		pool, err := pgxpool.Connect(ctx, viper.GetString("database.url"))
 		if err != nil {
 			log.Error().Err(err).Msg("could not connect to database")
 			os.Exit(1)
 		}
-		defer conn.Close(ctx)
+		defer pool.Close()
+
+		conn, err := pool.Acquire(ctx)
+		if err != nil {
+			log.Error().Err(err).Msg("could not acquire db connection from pool")
+		}
 
 		assets := make([]string, 0)
 		if recent {
@@ -56,7 +62,22 @@ var adjustCmd = &cobra.Command{
 			}
 		}
 
-		if !recent && len(args) == 0 {
+		if clean {
+			rows, err := conn.Query(ctx, `SELECT DISTINCT composite_figi FROM eod WHERE adj_close is null;`)
+			if err != nil {
+				log.Error().Err(err).Msg("could not query database for unique assets")
+			}
+			for rows.Next() {
+				var figi string
+				if err := rows.Scan(&figi); err != nil {
+					log.Error().Err(err).Msg("could not scan composite_figi into variable")
+					os.Exit(1)
+				}
+				assets = append(assets, figi)
+			}
+		}
+
+		if !recent && !clean && len(args) == 0 {
 			rows, err := conn.Query(ctx, `SELECT DISTINCT composite_figi FROM assets`)
 			if err != nil {
 				log.Error().Err(err).Msg("could not query database for unique assets")
@@ -100,4 +121,5 @@ func init() {
 	rootCmd.AddCommand(adjustCmd)
 
 	adjustCmd.Flags().BoolVarP(&recent, "recent", "r", false, "calculated adjusted price for recently changed eod tickers")
+	adjustCmd.Flags().BoolVarP(&clean, "clean", "c", false, "clean assets that have null values in adj_close")
 }
