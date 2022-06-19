@@ -18,7 +18,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v4"
 	"github.com/penny-vault/eod-maintenance/eod"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -34,17 +34,12 @@ var adjustCmd = &cobra.Command{
 	Short: "Calculate adjusted eod prices",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
-		pool, err := pgxpool.Connect(ctx, viper.GetString("database.url"))
+		conn, err := pgx.Connect(ctx, viper.GetString("database.url"))
 		if err != nil {
 			log.Error().Err(err).Msg("could not connect to database")
 			os.Exit(1)
 		}
-		defer pool.Close()
-
-		conn, err := pool.Acquire(ctx)
-		if err != nil {
-			log.Error().Err(err).Msg("could not acquire db connection from pool")
-		}
+		defer conn.Close(ctx)
 
 		assets := make([]string, 0)
 		if recent {
