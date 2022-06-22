@@ -73,7 +73,7 @@ func SaveAdjCloseToDb(ctx context.Context, conn PgxIface, prices []*Eod) error {
 		if _, err := tx.Exec(ctx, "UPDATE eod SET adj_close=$1 WHERE composite_figi=$2 AND event_date=$3", myEod.AdjClose, myEod.CompositeFigi, myEod.EventDate); err != nil {
 			log.Error().Err(err).Str("Ticker", myEod.Ticker).Float64("AdjustedClose", myEod.AdjClose).Float64("Close", myEod.Close).Time("EventDate", myEod.EventDate).Msg("failed to update eod")
 			if err2 := tx.Rollback(ctx); err2 != nil {
-				log.Error().Err(err).Msg("failed to rollback db transaction")
+				log.Error().Err(err2).Msg("failed to rollback db transaction")
 			}
 			return err
 		}
