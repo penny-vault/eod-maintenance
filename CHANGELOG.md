@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Set working directory of synthetic calculations to the input file dir
+- Recent now means last 2 days when -r used with adjust
 
 ### Deprecated
 

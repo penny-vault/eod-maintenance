@@ -43,7 +43,7 @@ var adjustCmd = &cobra.Command{
 
 		assets := make([]string, 0)
 		if recent {
-			rows, err := conn.Query(ctx, `SELECT DISTINCT composite_figi FROM eod WHERE event_date >= now() - interval '7 days' AND (split_factor != 1.0 OR dividend > 0.0)`)
+			rows, err := conn.Query(ctx, `SELECT DISTINCT composite_figi FROM eod WHERE event_date >= now() - interval '2 days' AND (split_factor != 1.0 OR dividend > 0.0)`)
 			if err != nil {
 				log.Error().Err(err).Msg("could not query database for unique assets")
 			}
