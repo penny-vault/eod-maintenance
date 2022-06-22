@@ -18,6 +18,8 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"syscall"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/pelletier/go-toml/v2"
@@ -46,6 +48,19 @@ var syntheticCmd = &cobra.Command{
 		defer conn.Close(ctx)
 
 		assets := make(map[string]*eod.SyntheticAsset)
+
+		abspath, err := filepath.Abs(args[0])
+		if err != nil {
+			log.Error().Err(err).Str("FileName", args[0]).Msg("could not get abs path for input file")
+			os.Exit(1)
+		}
+		dirpath := filepath.Dir(abspath)
+		if err := syscall.Chdir(dirpath); err != nil {
+			log.Error().Err(err).Str("DirPath", dirpath).Msg("could not change working directory")
+			os.Exit(1)
+		}
+		log.Info().Str("WorkingDir", dirpath).Msg("set working dir")
+
 		doc, err := ioutil.ReadFile(args[0])
 		if err != nil {
 			log.Error().Err(err).Str("FileName", args[0]).Msg("could not read input file")
@@ -59,6 +74,7 @@ var syntheticCmd = &cobra.Command{
 		for _, asset := range assets {
 			// load recent eod quotes for asset
 			history := eod.LoadEodHistory(ctx, conn, asset)
+			log.Info().Str("Asset.Symbol", asset.Symbol).Str("Asset.Name", asset.Name).Msg("building synthetic history for specified asset")
 			quotes, err := eod.BuildSyntheticHistory(ctx, asset, history)
 			if err != nil {
 				continue
