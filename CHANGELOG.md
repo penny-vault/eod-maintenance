@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Divide by 0 bug in calculation of synthetic histories
+- Adjust recent prices SQL query was improperly including all assets; not only those with dividends or splits in the last 7 days.
 
 ### Security
 
