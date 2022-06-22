@@ -70,8 +70,8 @@ func BuildSyntheticHistory(ctx context.Context, asset *SyntheticAsset, history [
 		EventDate:     asset.StartDate,
 		Ticker:        asset.Symbol,
 		CompositeFigi: asset.CompositeFigi,
-		Close:         10.0,
-		AdjClose:      10.0,
+		Close:         1.0,
+		AdjClose:      1.0,
 	}
 	if len(history) > 0 {
 		quote = history[0]
@@ -144,6 +144,9 @@ func getComponentPctChange(ctx context.Context, component *SyntheticComponent) (
 				log.Error().Err(err).Str("DateString", quote.EventDateStr).Msg("could not parse event date")
 			}
 			pct := quote.AdjClose / last
+			if last == 0.0 {
+				pct = 1.0
+			}
 			pctChange = append(pctChange, &PercentChange{
 				Date:    quote.EventDate,
 				Percent: pct,
