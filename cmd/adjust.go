@@ -97,8 +97,9 @@ var adjustCmd = &cobra.Command{
 			assets = append(assets, figi)
 		}
 
+		log.Info().Int("NumAssets", len(assets)).Msg("adjusting close prices")
 		for _, asset := range assets {
-			log.Info().Str("CompositeFigi", asset).Msg("adjusting close price for composite figi")
+			log.Info().Str("CompositeFigi", asset).Msg("adjusting close price for asset")
 			prices, err := eod.AdjustAssetEodPrice(ctx, conn, asset)
 			if err != nil {
 				log.Error().Err(err).Str("CompositeFigi", asset).Msg("could not adjust asset prices")
