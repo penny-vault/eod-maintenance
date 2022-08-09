@@ -5,7 +5,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -61,7 +60,7 @@ var syntheticCmd = &cobra.Command{
 		}
 		log.Info().Str("WorkingDir", dirpath).Msg("set working dir")
 
-		doc, err := ioutil.ReadFile(args[0])
+		doc, err := os.ReadFile(args[0])
 		if err != nil {
 			log.Error().Err(err).Str("FileName", args[0]).Msg("could not read input file")
 			os.Exit(1)

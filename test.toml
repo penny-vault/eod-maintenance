@@ -1,0 +1,26 @@
+["SPY+"]
+Symbol = "SPY+"
+Name = "S&P 500"
+Category = "US Large-Blend"
+StartDate = 1928-01-04
+CompositeFigi = "PVGCXBJGBLX6"
+
+[["SPY+".Components]]
+Name = "SP500 Index"
+Symbol = "GSPC"
+Start = 1928-01-04
+End = 1976-08-31
+FileName = "/Users/jdf/Developer/penny-vault/util/synthetic-asset-history-data/gspc.csv"
+
+[["SPY+".Components]]
+Symbol = "VFINX"
+Name = "VFINX"
+CompositeFigi = "BBG000BHTMY2"
+Start = 1976-09-30
+End = 1993-01-29
+
+[["SPY+".Components]]
+Symbol = "SPY"
+Name = "SPY"
+CompositeFigi = "BBG000BDTBL9"
+Start = 1993-02-01
