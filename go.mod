@@ -10,7 +10,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.0
 	github.com/magefile/mage v1.14.0
 	github.com/onsi/ginkgo/v2 v2.8.1
-	github.com/onsi/gomega v1.26.0
+	github.com/onsi/gomega v1.27.0
 	github.com/pashagolub/pgxmock v1.8.0
 	github.com/pelletier/go-toml/v2 v2.0.6
 	github.com/rs/zerolog v1.29.0
