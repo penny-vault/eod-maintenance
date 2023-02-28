@@ -7,7 +7,7 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20220531201732-5f969b02b902
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgtype v1.14.0
-	github.com/jackc/pgx/v4 v4.18.0
+	github.com/jackc/pgx/v4 v4.18.1
 	github.com/magefile/mage v1.14.0
 	github.com/onsi/ginkgo/v2 v2.8.4
 	github.com/onsi/gomega v1.27.1
