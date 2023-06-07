@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/magefile/mage v1.15.0
-	github.com/onsi/ginkgo/v2 v2.9.7
+	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.7
 	github.com/pashagolub/pgxmock v1.8.0
 	github.com/pelletier/go-toml/v2 v2.0.8
@@ -45,7 +45,7 @@ require (
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	golang.org/x/tools v0.9.1 // indirect
+	golang.org/x/tools v0.9.3 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
