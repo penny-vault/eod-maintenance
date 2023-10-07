@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/magefile/mage v1.15.0
-	github.com/onsi/ginkgo/v2 v2.12.0
+	github.com/onsi/ginkgo/v2 v2.12.1
 	github.com/onsi/gomega v1.27.10
 	github.com/pashagolub/pgxmock v1.8.0
 	github.com/pelletier/go-toml/v2 v2.1.0
