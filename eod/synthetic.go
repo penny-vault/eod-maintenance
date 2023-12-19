@@ -1,4 +1,4 @@
-// Copyright 2022
+// Copyright 2022-2023
 // SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,13 +98,13 @@ func BuildSyntheticHistory(ctx context.Context, asset *SyntheticAsset, history [
 				log.Info().Time("Date", pct.Date).Time("PctDate", pct.Date).Str("Name", component.Name).Msg("Component ended")
 				break
 			}
-			close := quote.Close * pct.Percent
+			closePrice := quote.Close * pct.Percent
 			quote = &Eod{
 				EventDate:     pct.Date,
 				Ticker:        asset.Symbol,
 				CompositeFigi: asset.CompositeFigi,
-				Close:         close,
-				AdjClose:      close,
+				Close:         closePrice,
+				AdjClose:      closePrice,
 			}
 			newHistory = append(newHistory, quote)
 		}

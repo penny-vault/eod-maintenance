@@ -1,4 +1,4 @@
-// Copyright 2022
+// Copyright 2022-2023
 // SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var print bool
+var printToScreen bool
 var saveDB bool
 
 // syntheticCmd represents the synthetic command
@@ -79,7 +79,7 @@ var syntheticCmd = &cobra.Command{
 				continue
 			}
 
-			if print {
+			if printToScreen {
 				eod.PrintEod(quotes)
 			}
 
@@ -95,6 +95,6 @@ var syntheticCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(syntheticCmd)
 
-	syntheticCmd.Flags().BoolVarP(&print, "print", "p", false, "Print EOD quotes to the screen")
+	syntheticCmd.Flags().BoolVarP(&printToScreen, "print", "p", false, "Print EOD quotes to the screen")
 	syntheticCmd.Flags().BoolVarP(&saveDB, "save", "s", false, "Save EOD quotes to the database")
 }
