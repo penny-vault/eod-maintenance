@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
 	github.com/jackc/pgconn v1.14.1
-	github.com/jackc/pgtype v1.14.1
+	github.com/jackc/pgtype v1.14.2
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/magefile/mage v1.15.0
 	github.com/onsi/ginkgo/v2 v2.14.0
